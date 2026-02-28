@@ -51,8 +51,6 @@ export default function Register() {
       return setError("Esse email já está cadastrado.");
     }
 
-    // ⚠️ Como é front-end, vamos salvar a senha em texto puro só para estudo.
-    // Em um backend real, nunca salvar assim (usa hash).
     const newUser = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       name: name.trim(),

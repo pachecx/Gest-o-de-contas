@@ -6,7 +6,7 @@ export default function Header() {
   const navigate = useNavigate();
 
   function handleLogout() {
-    logout(); // remove a sessão (gc_user)
+    logout(); 
     navigate("/login", { replace: true });
   }
 

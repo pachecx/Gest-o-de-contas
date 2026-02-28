@@ -32,7 +32,7 @@ export default function Login() {
     if (msg) return setError(msg);
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 350)); // simulando API
+    await new Promise((r) => setTimeout(r, 350)); 
 
     const users = loadUsers();
     const emailLower = email.trim().toLowerCase();
