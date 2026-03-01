@@ -127,6 +127,16 @@ export default function Dashboard() {
     setShowForm(false);
   }
 
+  function handleDeleteTransaction(id) {
+    const tx = transactions.find((t) => t.id === id);
+    const ok = window.confirm(`Excluir "${tx?.description}"?`);
+    if (!ok) return;
+
+    const next = transactions.filter((t) => t.id !== id);
+    setTransactions(next);
+    save("gc_transactions", next);
+  }
+
   return (
     <section className="space-y-6">
       <div className="flex items-end justify-between gap-4">
@@ -152,7 +162,7 @@ export default function Dashboard() {
             setError("");
             setShowForm((v) => !v);
           }}
-          className="rounded-xl bg-slate-100 px-3 py-2 text-slate-950 font-medium hover:bg-white transition"
+          className="rounded-xl bg-slate-100 px-3 py-2 text-slate-950 font-medium hover:bg-white transition cursor-pointer"
         >
           {showForm ? "Fechar" : "Nova transação"}
         </button>
@@ -163,13 +173,18 @@ export default function Dashboard() {
         <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
           <h2 className="font-semibold">Adicionar transação</h2>
 
-          <form onSubmit={handleCreateTransaction} className="mt-4 grid gap-3 sm:grid-cols-2">
+          <form
+            onSubmit={handleCreateTransaction}
+            className="mt-4 grid gap-3 sm:grid-cols-2"
+          >
             <div className="space-y-1">
               <label className="text-sm text-slate-200">Data</label>
               <input
                 type="date"
                 value={form.date}
-                onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, date: e.target.value }))
+                }
                 className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
               />
             </div>
@@ -178,7 +193,9 @@ export default function Dashboard() {
               <label className="text-sm text-slate-200">Tipo</label>
               <select
                 value={form.kind}
-                onChange={(e) => setForm((p) => ({ ...p, kind: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, kind: e.target.value }))
+                }
                 className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
               >
                 <option value="expense">Saída</option>
@@ -202,7 +219,9 @@ export default function Dashboard() {
               <label className="text-sm text-slate-200">Valor</label>
               <input
                 value={form.amount}
-                onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, amount: e.target.value }))
+                }
                 inputMode="decimal"
                 placeholder="Ex: 120.50"
                 className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
@@ -316,7 +335,10 @@ export default function Dashboard() {
               const amount = `${sign} ${formatBRL(tx.amount)}`;
 
               return (
-                <div key={tx.id} className="px-4 py-3 flex justify-between gap-3">
+                <div
+                  key={tx.id}
+                  className="px-4 py-3 flex justify-between gap-3"
+                >
                   <div>
                     <div className="font-medium">{tx.description}</div>
                     <div className="text-xs text-slate-400">
@@ -328,11 +350,20 @@ export default function Dashboard() {
                     <div
                       className={[
                         "font-semibold",
-                        tx.kind === "income" ? "text-emerald-300" : "text-rose-300",
+                        tx.kind === "income"
+                          ? "text-emerald-300"
+                          : "text-rose-300",
                       ].join(" ")}
                     >
                       {amount}
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTransaction(tx.id)}
+                      className="mt-1 text-xs text-slate-400 hover:text-slate-200 transition cursor-pointer"
+                    >
+                      Excluir
+                    </button>
                   </div>
                 </div>
               );
