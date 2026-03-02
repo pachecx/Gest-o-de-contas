@@ -113,7 +113,7 @@ export default function Dashboard({ onGoAccounts }) {
       setError(msg);
       return;
     }
-
+//teste
     const newTx = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       date: form.date,
