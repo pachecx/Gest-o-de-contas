@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ensureSeedData } from "../data/seed";
-import { formatBRL } from "../utils/money";
+import { formatBRL, parseMoney } from "../utils/money";
 
 function load(key, fallback) {
   const raw = localStorage.getItem(key);
@@ -19,9 +19,12 @@ function todayISO() {
   return `${y}-${m}-${day}`;
 }
 
-export default function Dashboard() {
+export default function Dashboard({ onGoAccounts }) {
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const hasAccounts = accounts.length > 0;
+
+ 
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -33,7 +36,9 @@ export default function Dashboard() {
     accountId: "",
   });
   const [error, setError] = useState("");
-
+ useEffect(() => {
+  if (!hasAccounts && showForm) setShowForm(false);
+}, [hasAccounts, showForm]);
   useEffect(() => {
     ensureSeedData();
     const acc = load("gc_accounts", []);
@@ -81,7 +86,7 @@ export default function Dashboard() {
     if (!form.description.trim()) return "Informe a descrição.";
     if (!form.accountId) return "Selecione uma conta.";
 
-    const amount = Number(form.amount);
+    const amount = parseMoney(form.amount);
     if (!form.amount || Number.isNaN(amount)) return "Informe um valor válido.";
     if (amount <= 0) return "O valor deve ser maior que 0.";
 
@@ -113,7 +118,7 @@ export default function Dashboard() {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       date: form.date,
       description: form.description.trim(),
-      amount: Number(form.amount),
+      amount: parseMoney(form.amount),
       kind: form.kind,
       category: form.category.trim() || "Outros",
       accountId: form.accountId,
@@ -158,18 +163,40 @@ export default function Dashboard() {
       {/* ação: nova transação */}
       <div className="flex justify-end">
         <button
+          disabled={!hasAccounts}
           onClick={() => {
             setError("");
             setShowForm((v) => !v);
           }}
-          className="rounded-xl bg-slate-100 px-3 py-2 text-slate-950 font-medium hover:bg-white transition cursor-pointer"
+          className={[
+            "rounded-xl px-3 py-2 font-medium transition",
+            hasAccounts
+              ? "bg-slate-100 text-slate-950 hover:bg-white"
+              : "bg-slate-800 text-slate-400 cursor-not-allowed",
+          ].join(" ")}
         >
           {showForm ? "Fechar" : "Nova transação"}
         </button>
+        {!hasAccounts && (
+  <div className="ml-4 rounded-2xl border border-amber-900/60 bg-amber-950/30 px-4 py-3 text-sm text-amber-200 flex items-center justify-between gap-3">
+    <span>
+      Você ainda não tem contas cadastradas. Crie uma conta antes de adicionar
+      transações.
+    </span>
+
+    <button
+      type="button"
+      onClick={onGoAccounts}
+      className="shrink-0 rounded-xl bg-amber-200 px-3 py-2 text-amber-950 font-medium hover:bg-amber-100 transition"
+    >
+      Ir para Contas
+    </button>
+  </div>
+)}
       </div>
 
       {/* form */}
-      {showForm && (
+      {showForm && hasAccounts && (
         <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
           <h2 className="font-semibold">Adicionar transação</h2>
 

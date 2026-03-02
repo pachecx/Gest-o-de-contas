@@ -1,7 +1,8 @@
 import { useState } from "react";
 import Header from "./components/Header";
-import Dashboard from "./pages/DashBoard";
+import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
+import Accounts from "./pages/Accounts";
 
 export default function App() {
   const [tab, setTab] = useState("dashboard");
@@ -35,10 +36,30 @@ export default function App() {
           >
             Transações
           </button>
+
+          <button
+            onClick={() => setTab("accounts")}
+            className={[
+              "rounded-xl px-3 py-2 text-sm transition",
+              tab === "accounts"
+                ? "bg-slate-100 text-slate-950"
+                : "border border-slate-800 text-slate-200 hover:bg-slate-900",
+            ].join(" ")}
+          >
+            Contas
+          </button>
         </div>
 
-        {tab === "dashboard" && <Dashboard />}
-        {tab === "transactions" && <Transactions />}
+        {tab === "dashboard" && (
+          <Dashboard onGoAccounts={() => setTab("accounts")} />
+        )}
+        {tab === "transactions" && (
+          <Transactions
+            onGoAccounts={() => setTab("accounts")}
+            onGoDashboard={() => setTab("dashboard")}
+          />
+        )}
+        {tab === "accounts" && <Accounts />}
       </main>
     </div>
   );

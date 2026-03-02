@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ensureSeedData } from "../data/seed";
-import { formatBRL } from "../utils/money";
+import { formatBRL, parseMoney } from "../utils/money";
 
 function load(key, fallback) {
   const raw = localStorage.getItem(key);
@@ -16,7 +16,7 @@ function monthFromISO(dateISO) {
   return String(dateISO || "").slice(0, 7);
 }
 
-export default function Transactions() {
+export default function Transactions({ onGoAccounts, onGoDashboard }) {
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
 
@@ -39,6 +39,9 @@ export default function Transactions() {
     month: "all", // "YYYY-MM" ou "all"
   });
 
+  const hasAccounts = accounts.length > 0;
+  const hasTransactions = transactions.length > 0;
+
   useEffect(() => {
     ensureSeedData();
     setAccounts(load("gc_accounts", []));
@@ -53,6 +56,7 @@ export default function Transactions() {
     const next = transactions.filter((t) => t.id !== id);
     setTransactions(next);
     save("gc_transactions", next);
+    if (editingId === id) cancelEdit();
   }
 
   function startEdit(tx) {
@@ -78,7 +82,7 @@ export default function Transactions() {
     if (!editForm.description.trim()) return "Informe a descrição.";
     if (!editForm.accountId) return "Selecione uma conta.";
 
-    const amount = Number(editForm.amount);
+    const amount = parseMoney(editForm.amount);
     if (!editForm.amount || Number.isNaN(amount))
       return "Informe um valor válido.";
     if (amount <= 0) return "O valor deve ser maior que 0.";
@@ -99,7 +103,7 @@ export default function Transactions() {
             ...t,
             date: editForm.date,
             description: editForm.description.trim(),
-            amount: Number(editForm.amount),
+            amount: parseMoney(editForm.amount),
             kind: editForm.kind,
             category: editForm.category.trim() || "Outros",
             accountId: editForm.accountId,
@@ -170,269 +174,323 @@ export default function Transactions() {
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-1">
-            <label className="text-sm text-slate-200">Busca</label>
-            <input
-              value={filters.q}
-              onChange={(e) => setFilters((p) => ({ ...p, q: e.target.value }))}
-              placeholder="descrição, categoria, data..."
-              className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
-            />
-          </div>
+      {!hasAccounts && (
+        <div className="rounded-2xl border border-amber-900/60 bg-amber-950/30 px-4 py-3 text-sm text-amber-200 flex items-center justify-between gap-3">
+          <span>
+            Você ainda não tem contas cadastradas. Crie uma conta antes de
+            registrar transações.
+          </span>
 
-          <div className="space-y-1">
-            <label className="text-sm text-slate-200">Tipo</label>
-            <select
-              value={filters.kind}
-              onChange={(e) =>
-                setFilters((p) => ({ ...p, kind: e.target.value }))
-              }
-              className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
-            >
-              <option value="all">Todos</option>
-              <option value="income">Entrada</option>
-              <option value="expense">Saída</option>
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm text-slate-200">Conta</label>
-            <select
-              value={filters.accountId}
-              onChange={(e) =>
-                setFilters((p) => ({ ...p, accountId: e.target.value }))
-              }
-              className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
-            >
-              <option value="all">Todas</option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm text-slate-200">Mês</label>
-            <select
-              value={filters.month}
-              onChange={(e) =>
-                setFilters((p) => ({ ...p, month: e.target.value }))
-              }
-              className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
-            >
-              <option value="all">Todos</option>
-              {monthsAvailable.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="mt-3 flex justify-end">
           <button
             type="button"
-            onClick={() =>
-              setFilters({ q: "", kind: "all", accountId: "all", month: "all" })
-            }
-            className="rounded-xl border border-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-900 transition"
+            onClick={() => onGoAccounts?.()}
+            className="shrink-0 rounded-xl bg-amber-200 px-3 py-2 text-amber-950 font-medium hover:bg-amber-100 transition"
           >
-            Limpar filtros
+            Ir para Contas
           </button>
         </div>
-      </div>
+      )}
 
-      {/* Lista */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/40">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-          <div className="font-semibold">Resultados</div>
-          <div className="text-xs text-slate-400">
-            {filtered.length} item(ns)
-          </div>
+      {hasAccounts && !hasTransactions && (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/40 px-4 py-3 text-sm text-slate-200 flex items-center justify-between gap-3">
+          <span>
+            Você ainda não tem transações. Adicione uma no Dashboard para
+            começar.
+          </span>
+
+          <button
+            type="button"
+            onClick={() => onGoDashboard?.()}
+            className="shrink-0 rounded-xl bg-slate-100 px-3 py-2 text-slate-950 font-medium hover:bg-white transition"
+          >
+            Ir para Dashboard
+          </button>
         </div>
+      )}
 
-        {editingId && (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold">Editar transação</h2>
-              <button
-                type="button"
-                onClick={cancelEdit}
-                className="text-sm text-slate-300 hover:text-slate-100"
-              >
-                Fechar
-              </button>
+      {/* Filtros */}
+      {hasAccounts && (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-1">
+              <label className="text-sm text-slate-200">Busca</label>
+              <input
+                value={filters.q}
+                onChange={(e) =>
+                  setFilters((p) => ({ ...p, q: e.target.value }))
+                }
+                placeholder="descrição, categoria, data..."
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
+              />
             </div>
 
-            <form
-              onSubmit={handleSaveEdit}
-              className="mt-4 grid gap-3 sm:grid-cols-2"
+            <div className="space-y-1">
+              <label className="text-sm text-slate-200">Tipo</label>
+              <select
+                value={filters.kind}
+                onChange={(e) =>
+                  setFilters((p) => ({ ...p, kind: e.target.value }))
+                }
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
+              >
+                <option value="all">Todos</option>
+                <option value="income">Entrada</option>
+                <option value="expense">Saída</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm text-slate-200">Conta</label>
+              <select
+                value={filters.accountId}
+                onChange={(e) =>
+                  setFilters((p) => ({ ...p, accountId: e.target.value }))
+                }
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
+              >
+                <option value="all">Todas</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm text-slate-200">Mês</label>
+              <select
+                value={filters.month}
+                onChange={(e) =>
+                  setFilters((p) => ({ ...p, month: e.target.value }))
+                }
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
+              >
+                <option value="all">Todos</option>
+                {monthsAvailable.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-3 flex justify-end">
+            <button
+              type="button"
+              onClick={() =>
+                setFilters({
+                  q: "",
+                  kind: "all",
+                  accountId: "all",
+                  month: "all",
+                })
+              }
+              className="rounded-xl border border-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-900 transition"
             >
-              <div className="space-y-1">
-                <label className="text-sm text-slate-200">Data</label>
-                <input
-                  type="date"
-                  value={editForm.date}
-                  onChange={(e) =>
-                    setEditForm((p) => ({ ...p, date: e.target.value }))
-                  }
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
-                />
-              </div>
+              Limpar filtros
+            </button>
+          </div>
+        </div>
+      )}
 
-              <div className="space-y-1">
-                <label className="text-sm text-slate-200">Tipo</label>
-                <select
-                  value={editForm.kind}
-                  onChange={(e) =>
-                    setEditForm((p) => ({ ...p, kind: e.target.value }))
-                  }
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
-                >
-                  <option value="expense">Saída</option>
-                  <option value="income">Entrada</option>
-                </select>
+      {/* Lista */}
+      {hasAccounts && (
+        <>
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/40">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+              <div className="font-semibold">Resultados</div>
+              <div className="text-xs text-slate-400">
+                {filtered.length} item(ns)
               </div>
+            </div>
 
-              <div className="space-y-1 sm:col-span-2">
-                <label className="text-sm text-slate-200">Descrição</label>
-                <input
-                  value={editForm.description}
-                  onChange={(e) =>
-                    setEditForm((p) => ({ ...p, description: e.target.value }))
-                  }
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-sm text-slate-200">Valor</label>
-                <input
-                  value={editForm.amount}
-                  onChange={(e) =>
-                    setEditForm((p) => ({ ...p, amount: e.target.value }))
-                  }
-                  inputMode="decimal"
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-sm text-slate-200">Conta</label>
-                <select
-                  value={editForm.accountId}
-                  onChange={(e) =>
-                    setEditForm((p) => ({ ...p, accountId: e.target.value }))
-                  }
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
-                >
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1 sm:col-span-2">
-                <label className="text-sm text-slate-200">Categoria</label>
-                <input
-                  value={editForm.category}
-                  onChange={(e) =>
-                    setEditForm((p) => ({ ...p, category: e.target.value }))
-                  }
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
-                />
-              </div>
-
-              {editError && (
-                <div className="sm:col-span-2 rounded-xl border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-200">
-                  {editError}
+            {editingId && (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-semibold">Editar transação</h2>
+                  <button
+                    type="button"
+                    onClick={cancelEdit}
+                    className="text-sm text-slate-300 hover:text-slate-100"
+                  >
+                    Fechar
+                  </button>
                 </div>
-              )}
 
-              <div className="sm:col-span-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={cancelEdit}
-                  className="rounded-xl border border-slate-800 px-3 py-2 text-slate-200 hover:bg-slate-900 transition"
+                <form
+                  onSubmit={handleSaveEdit}
+                  className="mt-4 grid gap-3 sm:grid-cols-2"
                 >
-                  Cancelar
-                </button>
-
-                <button
-                  type="submit"
-                  className="rounded-xl bg-slate-100 px-3 py-2 text-slate-950 font-medium hover:bg-white transition"
-                >
-                  Salvar alterações
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {filtered.length === 0 ? (
-          <div className="px-4 py-4 text-sm text-slate-300">
-            Nenhuma transação encontrada com esses filtros.
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-800">
-            {filtered.map((tx) => {
-              const sign = tx.kind === "income" ? "+" : "-";
-              const amount = `${sign} ${formatBRL(tx.amount)}`;
-
-              return (
-                <div
-                  key={tx.id}
-                  className="px-4 py-3 flex justify-between gap-4"
-                >
-                  <div>
-                    <div className="font-medium">{tx.description}</div>
-                    <div className="text-xs text-slate-400">
-                      {tx.date} • {tx.category} • {accountName(tx.accountId)}
-                    </div>
+                  <div className="space-y-1">
+                    <label className="text-sm text-slate-200">Data</label>
+                    <input
+                      type="date"
+                      value={editForm.date}
+                      onChange={(e) =>
+                        setEditForm((p) => ({ ...p, date: e.target.value }))
+                      }
+                      className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
+                    />
                   </div>
 
-                  <div className="text-right">
+                  <div className="space-y-1">
+                    <label className="text-sm text-slate-200">Tipo</label>
+                    <select
+                      value={editForm.kind}
+                      onChange={(e) =>
+                        setEditForm((p) => ({ ...p, kind: e.target.value }))
+                      }
+                      className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
+                    >
+                      <option value="expense">Saída</option>
+                      <option value="income">Entrada</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1 sm:col-span-2">
+                    <label className="text-sm text-slate-200">Descrição</label>
+                    <input
+                      value={editForm.description}
+                      onChange={(e) =>
+                        setEditForm((p) => ({
+                          ...p,
+                          description: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm text-slate-200">Valor</label>
+                    <input
+                      value={editForm.amount}
+                      onChange={(e) =>
+                        setEditForm((p) => ({ ...p, amount: e.target.value }))
+                      }
+                      inputMode="decimal"
+                      className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm text-slate-200">Conta</label>
+                    <select
+                      value={editForm.accountId}
+                      onChange={(e) =>
+                        setEditForm((p) => ({
+                          ...p,
+                          accountId: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
+                    >
+                      {accounts.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1 sm:col-span-2">
+                    <label className="text-sm text-slate-200">Categoria</label>
+                    <input
+                      value={editForm.category}
+                      onChange={(e) =>
+                        setEditForm((p) => ({ ...p, category: e.target.value }))
+                      }
+                      className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 outline-none focus:border-slate-500"
+                    />
+                  </div>
+
+                  {editError && (
+                    <div className="sm:col-span-2 rounded-xl border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-200">
+                      {editError}
+                    </div>
+                  )}
+
+                  <div className="sm:col-span-2 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      className="rounded-xl border border-slate-800 px-3 py-2 text-slate-200 hover:bg-slate-900 transition"
+                    >
+                      Cancelar
+                    </button>
+
+                    <button
+                      type="submit"
+                      className="rounded-xl bg-slate-100 px-3 py-2 text-slate-950 font-medium hover:bg-white transition"
+                    >
+                      Salvar alterações
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {filtered.length === 0 ? (
+              <div className="px-4 py-4 text-sm text-slate-300">
+                Nenhuma transação encontrada com esses filtros.
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-800">
+                {filtered.map((tx) => {
+                  const sign = tx.kind === "income" ? "+" : "-";
+                  const amount = `${sign} ${formatBRL(tx.amount)}`;
+
+                  return (
                     <div
-                      className={[
-                        "font-semibold",
-                        tx.kind === "income"
-                          ? "text-emerald-300"
-                          : "text-rose-300",
-                      ].join(" ")}
+                      key={tx.id}
+                      className="px-4 py-3 flex justify-between gap-4"
                     >
-                      {amount}
+                      <div>
+                        <div className="font-medium">{tx.description}</div>
+                        <div className="text-xs text-slate-400">
+                          {tx.date} • {tx.category} •{" "}
+                          {accountName(tx.accountId)}
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <div
+                          className={[
+                            "font-semibold",
+                            tx.kind === "income"
+                              ? "text-emerald-300"
+                              : "text-rose-300",
+                          ].join(" ")}
+                        >
+                          {amount}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(tx.id)}
+                          className="mt-1 text-xs text-slate-400 hover:text-slate-200 transition mr-2.5"
+                        >
+                          Excluir
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => startEdit(tx)}
+                          className="mt-1 mr-3 text-xs text-slate-400 hover:text-slate-200 transition"
+                        >
+                          Editar
+                        </button>
+                      </div>
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(tx.id)}
-                      className="mt-1 text-xs text-slate-400 hover:text-slate-200 transition mr-2.5"
-                    >
-                      Excluir
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => startEdit(tx)}
-                      className="mt-1 mr-3 text-xs text-slate-400 hover:text-slate-200 transition"
-                    >
-                      Editar
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </section>
   );
 }
