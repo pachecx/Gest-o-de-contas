@@ -41,7 +41,7 @@ export default function Accounts() {
 
   // erro geral (ex: tentativa de excluir conta com transações)
   const [generalError, setGeneralError] = useState("");
-
+// teste
   useEffect(() => {
     ensureSeedData();
     setAccounts(load("gc_accounts", []));
