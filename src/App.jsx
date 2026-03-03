@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Header from "./components/Header";
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./pages/DashBoard";
 import Transactions from "./pages/Transactions";
 import Accounts from "./pages/Accounts";
 

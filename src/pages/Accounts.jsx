@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ensureSeedData } from "../data/seed";
 import { formatBRL, parseMoney } from "../utils/money";
-
+import { useAuth } from "../auth/AuthContext";
+import { loadUser, saveUser } from "../utils/storage";
 function load(key, fallback) {
   const raw = localStorage.getItem(key);
   return raw ? JSON.parse(raw) : fallback;
@@ -20,7 +21,7 @@ const ACCOUNT_TYPES = [
 export default function Accounts() {
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
-
+const { user } = useAuth();
   // criar
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -43,10 +44,11 @@ export default function Accounts() {
   const [generalError, setGeneralError] = useState("");
 
   useEffect(() => {
-    ensureSeedData();
-    setAccounts(load("gc_accounts", []));
-    setTransactions(load("gc_transactions", []));
-  }, []);
+  ensureSeedData(user.email);
+
+  setAccounts(loadUser("gc_accounts", user.email, []));
+  setTransactions(loadUser("gc_transactions", user.email, []));
+}, [user.email]);
 
   const accountsWithBalance = useMemo(() => {
     const byId = new Map();
@@ -114,7 +116,7 @@ export default function Accounts() {
     };
     const next = [...accounts, newAcc];
     setAccounts(next);
-    save("gc_accounts", next);
+    saveUser("gc_accounts", user.email, next);
 
     resetCreateForm();
     setShowCreate(false);

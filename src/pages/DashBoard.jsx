@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ensureSeedData } from "../data/seed";
 import { formatBRL, parseMoney } from "../utils/money";
+import { useAuth } from "../auth/AuthContext";
+import { loadUser, saveUser } from "../utils/storage";
 
 function load(key, fallback) {
   const raw = localStorage.getItem(key);
@@ -24,7 +26,7 @@ export default function Dashboard({ onGoAccounts }) {
   const [transactions, setTransactions] = useState([]);
   const hasAccounts = accounts.length > 0;
 
- 
+ const { user } = useAuth();
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -39,19 +41,23 @@ export default function Dashboard({ onGoAccounts }) {
  useEffect(() => {
   if (!hasAccounts && showForm) setShowForm(false);
 }, [hasAccounts, showForm]);
-  useEffect(() => {
-    ensureSeedData();
-    const acc = load("gc_accounts", []);
-    const tx = load("gc_transactions", []);
 
-    setAccounts(acc);
-    setTransactions(tx);
+ useEffect(() => {
+  if (!user?.email) return;
 
-    // seta conta padrão no form
-    if (acc.length > 0) {
-      setForm((prev) => ({ ...prev, accountId: acc[0].id }));
-    }
-  }, []);
+  ensureSeedData(user.email);
+
+  const acc = loadUser("gc_accounts", user.email, []);
+  const tx = loadUser("gc_transactions", user.email, []);
+
+  setAccounts(acc);
+  setTransactions(tx);
+
+  // conta padrão no form
+  if (acc.length > 0) {
+    setForm((prev) => ({ ...prev, accountId: prev.accountId || acc[0].id }));
+  }
+}, [user?.email]);
 
   const computed = useMemo(() => {
     const byAccount = new Map();
@@ -113,7 +119,7 @@ export default function Dashboard({ onGoAccounts }) {
       setError(msg);
       return;
     }
-//teste
+
     const newTx = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       date: form.date,
@@ -126,7 +132,7 @@ export default function Dashboard({ onGoAccounts }) {
 
     const next = [newTx, ...transactions];
     setTransactions(next);
-    save("gc_transactions", next);
+    saveUser("gc_transactions", user.email, next);
 
     resetFormKeepAccount();
     setShowForm(false);

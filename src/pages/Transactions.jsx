@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ensureSeedData } from "../data/seed";
 import { formatBRL, parseMoney } from "../utils/money";
-
+import { useAuth } from "../auth/AuthContext";
+import { loadUser, saveUser } from "../utils/storage";
 function load(key, fallback) {
   const raw = localStorage.getItem(key);
   return raw ? JSON.parse(raw) : fallback;
@@ -19,7 +20,7 @@ function monthFromISO(dateISO) {
 export default function Transactions({ onGoAccounts, onGoDashboard }) {
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
-
+const { user } = useAuth();
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({
     date: "",
@@ -42,12 +43,12 @@ export default function Transactions({ onGoAccounts, onGoDashboard }) {
   const hasAccounts = accounts.length > 0;
   const hasTransactions = transactions.length > 0;
 
-  useEffect(() => {
-    ensureSeedData();
-    setAccounts(load("gc_accounts", []));
-    setTransactions(load("gc_transactions", []));
-  }, []);
+useEffect(() => {
+  ensureSeedData(user.email);
 
+  setAccounts(loadUser("gc_accounts", user.email, []));
+  setTransactions(loadUser("gc_transactions", user.email, []));
+}, [user.email]);
   function handleDelete(id) {
     const tx = transactions.find((t) => t.id === id);
     const ok = window.confirm(`Excluir "${tx?.description ?? "transação"}"?`);
@@ -55,7 +56,7 @@ export default function Transactions({ onGoAccounts, onGoDashboard }) {
 
     const next = transactions.filter((t) => t.id !== id);
     setTransactions(next);
-    save("gc_transactions", next);
+    saveUser("gc_transactions", user.email, next);
     if (editingId === id) cancelEdit();
   }
 
