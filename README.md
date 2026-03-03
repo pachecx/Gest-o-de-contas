@@ -1,16 +1,57 @@
-# React + Vite
+# Gestão de Contas (React + Tailwind)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicação front-end para **gestão de contas pessoais** (contas e transações), construída com **React** e **Tailwind CSS**.  
+O projeto foi feito com foco em **relembrar conceitos**, **aprender boas práticas** e evoluir o app passo a passo.
 
-Currently, two official plugins are available:
+> ✅ **Sem TypeScript** (para facilitar o entendimento).  
+> ✅ **Persistência local** usando `localStorage` (mock de banco de dados).  
+> ✅ **Autenticação simulada** (cadastro/login apenas no front).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## ✨ Funcionalidades
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Autenticação (mock)
+- Cadastro de usuário
+- Login e logout
+- Rotas protegidas (usuário precisa estar logado)
 
-## Expanding the ESLint configuration
+### Contas
+- Listagem de contas com saldo atual
+- Criar conta
+- Editar conta
+- Excluir conta (bloqueado se houver transações vinculadas)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Transações
+- Dashboard com visão geral + criação de transações
+- Tela de transações com:
+  - filtros (busca, tipo, conta, mês)
+  - edição
+  - exclusão
+- Cálculo de saldo por conta:
+  - `saldoAtual = saldoInicial + entradas - saídas`
+
+### Dados por usuário
+Os dados são separados por usuário no `localStorage`:
+- `gc_users` → lista de usuários cadastrados
+- `gc_user` → usuário logado (sessão)
+- `gc_accounts:<email>` → contas do usuário
+- `gc_transactions:<email>` → transações do usuário
+
+---
+
+## 🧱 Tecnologias
+- React (Vite)
+- Tailwind CSS
+- React Router DOM
+- localStorage (persistência)
+
+---
+
+## ▶️ Como rodar localmente
+
+### 1) Clonar e instalar
+```bash
+git clone <URL_DO_REPOSITORIO>
+cd gestao-contas
+npm install
